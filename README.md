@@ -128,11 +128,11 @@ FASHN provides a suite of [fashion AI APIs](https://fashn.ai/products/api) inclu
 If you use FASHN VTON v1.5 in your research, please cite:
 
 ```bibtex
-@article{bochman2025fashnvton,
+@article{bochman2026fashnvton,
   title={FASHN VTON v1.5: Efficient Maskless Virtual Try-On in Pixel Space},
   author={Bochman, Dan and Bochman, Aya},
   journal={arXiv preprint},
-  year={2025},
+  year={2026},
   note={Paper coming soon}
 }
 ```
