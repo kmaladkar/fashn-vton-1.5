@@ -31,12 +31,10 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
 
-### GPU Acceleration
-
-The package includes `onnxruntime` for CPU inference. For GPU-accelerated pose detection, replace it with the GPU version:
+**Note:** Installation includes `onnxruntime-gpu` for GPU-accelerated pose detection. Ensure CUDA is properly configured on your system. For CPU-only environments, replace with the CPU version:
 
 ```bash
-pip uninstall onnxruntime && pip install onnxruntime-gpu
+pip uninstall onnxruntime-gpu && pip install onnxruntime
 ```
 
 ---
