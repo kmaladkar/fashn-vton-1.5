@@ -106,10 +106,10 @@ See [`examples/basic_inference.py`](examples/basic_inference.py) for additional 
 
 ## Docker + FastAPI (recommended on macOS)
 
-The model and dependencies do not support macOS (PyTorch/human parser require Linux). Run the try-on service in Docker and call it via FastAPI:
+The model and dependencies do not support macOS (PyTorch/human parser require Linux). Run the try-on service in Docker using the **official PyTorch image** from Docker Hub so you don’t build PyTorch from source:
 
 ```bash
-# Build and start (weights are baked into the image at build time; first build ~15–30 min)
+# Build and start (base image from Docker Hub; weights baked in at build time)
 docker compose up --build
 
 # API: http://localhost:8080
@@ -131,9 +131,15 @@ curl -X POST http://localhost:8080/try-on \
 
 Model weights (~2 GB) are downloaded during `docker compose build` and baked into the image, so container start is fast (no download at runtime). For GPU, use [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) and uncomment the `deploy.resources.reservations` block in `docker-compose.yml`.
 
+**Docker image:** Uses a small **Linux + PyTorch CPU** setup: `python:3.11-slim-bookworm` plus PyTorch CPU from the [official index](https://download.pytorch.org/whl/cpu). No CUDA base image, so pulls and builds are faster; inference runs on CPU.
+
 **Why is the first build slow?**
-- **First build (15–30 min):** Docker installs PyTorch and deps (~2 GB), then downloads model weights (~2 GB) into the image. Use `docker compose build` and watch the log; subsequent builds use cache.
+- **First build:** Pulling the slim base (~150 MB), installing PyTorch CPU and deps (~1–2 GB), then downloading weights (~2 GB). Subsequent builds use cache.
 - **Container start:** No weight download; the API is ready shortly after startup.
+
+**Troubleshooting**
+- If you see `strconv.Atoi: parsing "": invalid syntax` or warnings about `com.docker.compose.container-number`, an old container has bad labels. Remove it and start clean: `docker compose down --remove-orphans && docker compose up -d`.
+- If the container name is already in use: `docker rm -f fashn-vton-15-fashn-vton-1` (or the ID from `docker ps -a`), then `docker compose up -d`.
 
 ---
 

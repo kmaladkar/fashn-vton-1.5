@@ -1,7 +1,7 @@
-# FASHN VTON v1.5 — Linux only (PyTorch + human parser require Linux/GPU wheels)
-FROM python:3.11-slim-bookworm
+# Lightweight Linux + PyTorch CPU (no CUDA). Small base, faster pulls.
+FROM python:3.12-slim-bookworm
 
-# OpenCV and other runtime libs
+# OpenCV and minimal runtime libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     libglib2.0-0 \
@@ -9,17 +9,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy project (see .dockerignore)
+# PyTorch CPU from official index (smaller than CUDA wheels)
+RUN pip install --no-cache-dir \
+    torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+# Copy project
 COPY pyproject.toml ./
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY app/ ./app/
 
-# Install uv and project (PyTorch + deps ~2 GB — first build can take 10–20 min)
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install uv && uv pip install --system -e ".[api]"
+# App + API deps; force onnxruntime CPU (smaller, no CUDA)
+RUN pip install --no-cache-dir -e ".[api]" && \
+    pip uninstall -y onnxruntime-gpu 2>/dev/null || true && \
+    pip install --no-cache-dir onnxruntime
 
-# Bake model weights into image (~2 GB — no download on container start)
+# Bake model weights into image (~2 GB)
 ENV FASHN_WEIGHTS_DIR=/weights
 ENV PORT=8080
 RUN mkdir -p /weights && python scripts/download_weights.py --weights-dir /weights
