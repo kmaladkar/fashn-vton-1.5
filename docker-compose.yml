@@ -1,0 +1,17 @@
+services:
+  fashn-vton:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - FASHN_WEIGHTS_DIR=/weights
+      - PORT=8080
+    # Weights are baked into the image; no volume needed.
+    # Optional: GPU support (uncomment if you have nvidia-docker)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
