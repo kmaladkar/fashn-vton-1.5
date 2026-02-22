@@ -22,7 +22,20 @@ This repo contains minimal inference code to run virtual try-on with the FASHN V
 
 ## Local Installation
 
-We recommend using a virtual environment:
+### Using uv (recommended)
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package installer and resolver. Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
+
+```bash
+git clone https://github.com/fashn-AI/fashn-vton-1.5.git
+cd fashn-vton-1.5
+uv sync
+source .venv/bin/activate   # or on Windows: .venv\Scripts\activate
+```
+
+This creates a virtual environment in `.venv` and installs the package in editable mode. Use `uv run` to run commands in that environment without activating it, e.g. `uv run python examples/basic_inference.py ...`. On macOS Intel, the lockfile is resolved for compatible wheels; on Linux and Apple Silicon you get the same locked versions for reproducibility.
+
+### Using pip
 
 ```bash
 git clone https://github.com/fashn-AI/fashn-vton-1.5.git
@@ -31,11 +44,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
 
-**Note:** Installation includes `onnxruntime-gpu` for GPU-accelerated pose detection. Ensure CUDA is properly configured on your system. For CPU-only environments, replace with the CPU version:
-
-```bash
-pip uninstall onnxruntime-gpu && pip install onnxruntime
-```
+**Note:** Installation uses `onnxruntime-gpu` on Linux/Windows for GPU-accelerated pose detection (CUDA required). On macOS, `onnxruntime` (CPU) is used. For CPU-only on Linux/Windows, replace `onnxruntime-gpu` with `onnxruntime` in `pyproject.toml` or install after setup: `pip uninstall onnxruntime-gpu && pip install onnxruntime`.
 
 ---
 
@@ -95,6 +104,39 @@ See [`examples/basic_inference.py`](examples/basic_inference.py) for additional 
 
 ---
 
+## Docker + FastAPI (recommended on macOS)
+
+The model and dependencies do not support macOS (PyTorch/human parser require Linux). Run the try-on service in Docker and call it via FastAPI:
+
+```bash
+# Build and start (weights are baked into the image at build time; first build ~15–30 min)
+docker compose up --build
+
+# API: http://localhost:8080
+# Docs: http://localhost:8080/docs
+```
+
+- **GET /health** — Check if the service and pipeline are ready.
+- **POST /try-on** — Multipart form: `person_image`, `garment_image` (files), `category` (`tops` | `bottoms` | `one-pieces`), optional `garment_photo_type` (`model` | `flat-lay`), `num_timesteps`, `guidance_scale`, `seed`. Returns the generated image as PNG.
+
+Example with curl:
+
+```bash
+curl -X POST http://localhost:8080/try-on \
+  -F "person_image=@examples/data/model.webp" \
+  -F "garment_image=@examples/data/garment.webp" \
+  -F "category=tops" \
+  -o result.png
+```
+
+Model weights (~2 GB) are downloaded during `docker compose build` and baked into the image, so container start is fast (no download at runtime). For GPU, use [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) and uncomment the `deploy.resources.reservations` block in `docker-compose.yml`.
+
+**Why is the first build slow?**
+- **First build (15–30 min):** Docker installs PyTorch and deps (~2 GB), then downloads model weights (~2 GB) into the image. Use `docker compose build` and watch the log; subsequent builds use cache.
+- **Container start:** No weight download; the API is ready shortly after startup.
+
+---
+
 ## Categories
 
 | Category | Description |
@@ -105,7 +147,7 @@ See [`examples/basic_inference.py`](examples/basic_inference.py) for additional 
 
 ---
 
-## API
+## FASHN cloud API
 
 FASHN provides a suite of [fashion AI APIs](https://fashn.ai/products/api) including virtual try-on, model generation, image-to-video, and more. See the [docs](https://docs.fashn.ai/) to get started.
 
@@ -136,3 +178,4 @@ Apache-2.0. See [LICENSE](LICENSE) for details.
 - [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) (Apache-2.0)
 - [fashn-human-parser](https://github.com/fashn-AI/fashn-human-parser) ([License](https://github.com/fashn-AI/fashn-human-parser?tab=readme-ov-file#license))
 
+# fash_vton
